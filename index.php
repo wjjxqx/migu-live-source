@@ -84,21 +84,17 @@ if ($requestMethod === 'HEAD') {
     exit;
 }
 
-// 只允许GET请求
-if ($requestMethod !== 'GET') {
-    http_response_code(200);
-    header('Content-Type: application/json;charset=UTF-8');
-    echo json_encode(['data' => '请使用GET请求']);
-    printRed('使用非GET请求:' . $requestMethod);
-    exit;
-}
-
 // 接口列表
 $interfaceList = ['/', '/interface.txt', '/m3u', '/txt', '/playback.xml'];
 
 // 静态文件路由 (admin.php等)
 if ($path === '/admin.php' || $path === '/admin') {
     require_once __DIR__ . '/frontend/admin.php';
+    exit;
+}
+
+if ($path === '/admin_handler.php') {
+    require_once __DIR__ . '/admin_handler.php';
     exit;
 }
 
@@ -127,6 +123,17 @@ if ($path === '/cron' || $path === '/update') {
     
     require_once __DIR__ . '/cron/updateData.php';
     
+    // 调用更新函数
+    echo ">>> 开始执行 updateData()\n";
+    ob_flush(); flush();
+    
+    try {
+        updateData(0);
+    } catch (Exception $e) {
+        echo ">>> 异常: " . $e->getMessage() . "\n";
+    }
+    
+    echo ">>> updateData() 执行完毕\n";
     echo "---\n";
     echo "=== 结果 ===\n";
     
