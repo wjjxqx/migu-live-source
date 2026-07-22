@@ -96,6 +96,19 @@ if ($requestMethod !== 'GET') {
 // 接口列表
 $interfaceList = ['/', '/interface.txt', '/m3u', '/txt', '/playback.xml'];
 
+// 静态文件路由 (admin.php等)
+if ($path === '/admin.php' || $path === '/admin') {
+    require_once __DIR__ . '/frontend/admin.php';
+    exit;
+}
+
+// 健康检查端点
+if ($path === '/health') {
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'ok', 'time' => date('Y-m-d H:i:s')]);
+    exit;
+}
+
 // Cron触发端点 (用于外部定时任务)
 if ($path === '/cron' || $path === '/update') {
     header('Content-Type: text/html;charset=UTF-8');
@@ -126,13 +139,6 @@ if ($path === '/cron' || $path === '/update') {
     }
     echo "</pre>";
     echo '<p><a href="/">返回首页</a> | <a href="/admin.php">管理后台</a></p>';
-    exit;
-}
-
-// 健康检查端点
-if ($path === '/health') {
-    header('Content-Type: application/json');
-    echo json_encode(['status' => 'ok', 'time' => date('Y-m-d H:i:s')]);
     exit;
 }
 
