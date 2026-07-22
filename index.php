@@ -12,7 +12,6 @@ ini_set('log_errors', 1);
 require_once __DIR__ . '/core/config.php';
 require_once __DIR__ . '/utils/utils.php';
 require_once __DIR__ . '/utils/appUtils.php';
-require_once __DIR__ . '/cron/updateData.php';
 
 // 确保数据目录存在
 if (!is_dir(DATA_DIR)) {
@@ -24,27 +23,10 @@ $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $headers = getallheaders();
 
-// 解析URL - 修复Nginx下的PATH_INFO问题
-$path = '';
-
-// 方法1: 尝试从PATH_INFO获取
-if (isset($_SERVER['PATH_INFO']) && !empty($_SERVER['PATH_INFO'])) {
-    $path = $_SERVER['PATH_INFO'];
-}
-// 方法2: 从REQUEST_URI中提取
-else {
-    // 移除query string
-    $uri = explode('?', $requestUri)[0];
-    
-    // 移除script name（支持根目录和子目录）
-    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-    if (!empty($scriptName) && strpos($uri, $scriptName) === 0) {
-        $path = substr($uri, strlen($scriptName));
-    }
-    // 方法3: 如果script name不匹配，直接使用uri
-    else {
-        $path = $uri;
-    }
+// 解析URL路径 - 简化版，直接从REQUEST_URI提取
+$path = parse_url($requestUri, PHP_URL_PATH);
+if (empty($path)) {
+    $path = '/';
 }
 
 // 确保path以/开头
