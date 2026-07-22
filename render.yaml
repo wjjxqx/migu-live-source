@@ -1,13 +1,14 @@
 services:
   - type: web
     name: migu-live-source
-    runtime: php
-    buildCommand: "composer install --no-dev --optimize-autoloader"
-    startCommand: "php -S 0.0.0.0:$PORT index.php"
+    runtime: docker
+    dockerfilePath: ./Dockerfile
     envVars:
-      - key: PHP_VERSION
-        value: "8.1"
-      - key: APP_ENV
-        value: production
-    healthCheckPath: /
+      - key: MIGU_RATE_TYPE
+        value: "3"
+      - key: MIGU_IGNORE_CATEGORY
+        value: "TV"
+      - key: MIGU_ENABLE_H265
+        value: "true"
+    healthCheckPath: /health
     autoDeploy: true
