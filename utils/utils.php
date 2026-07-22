@@ -213,25 +213,31 @@ function printDebug($msg) {
 }
 
 function printGreen($msg) {
+    echo "[INFO] " . $msg . "\n";
     error_log("[INFO] " . $msg);
 }
 
 function printRed($msg) {
+    echo "[ERROR] " . $msg . "\n";
     error_log("[ERROR] " . $msg);
 }
 
 function printYellow($msg) {
+    echo "[WARN] " . $msg . "\n";
     error_log("[WARN] " . $msg);
 }
 
 function printBlue($msg) {
+    echo "[NOTICE] " . $msg . "\n";
     error_log("[NOTICE] " . $msg);
 }
 
 function printMagenta($msg) {
+    echo "[DEBUG] " . $msg . "\n";
     error_log("[MAGENTA] " . $msg);
 }
 
 function printGrey($msg) {
+    echo "[TRACE] " . $msg . "\n";
     error_log("[GREY] " . $msg);
 }

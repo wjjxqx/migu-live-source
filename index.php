@@ -111,34 +111,38 @@ if ($path === '/health') {
 
 // Cron触发端点 (用于外部定时任务)
 if ($path === '/cron' || $path === '/update') {
-    header('Content-Type: text/html;charset=UTF-8');
+    header('Content-Type: text/plain; charset=utf-8');
     header('X-Accel-Buffering: no');
-    echo '<pre>';
-    echo "⏰ 数据更新开始 - " . date('Y-m-d H:i:s') . "\n";
-    echo "PHP版本: " . phpversion() . "\n";
-    echo "Extensions: " . implode(', ', get_loaded_extensions()) . "\n";
-    echo "ignoreCategory: " . getConf('ignoreCategory', '') . "\n";
+    
+    echo "=== 数据更新 - " . date('Y-m-d H:i:s') . " ===\n";
+    echo "PHP: " . phpversion() . "\n";
+    echo "ignoreCategory: [" . getConf('ignoreCategory', '') . "]\n";
+    echo "rateType: " . getConf('rateType', 3) . "\n";
     echo "---\n";
     ob_flush(); flush();
+    
+    // 禁用错误日志，改为输出
+    ini_set('display_errors', 1);
+    ini_set('error_reporting', E_ALL);
     
     require_once __DIR__ . '/cron/updateData.php';
     
     echo "---\n";
-    echo "✅ 更新完成 - " . date('Y-m-d H:i:s') . "\n";
+    echo "=== 结果 ===\n";
     
-    // 检查生成的文件
+    // 检查文件
     $files = ['interface.txt', 'interfaceTXT.txt', 'playback.xml'];
     foreach ($files as $f) {
-        $path2 = DATA_DIR . '/' . $f;
-        if (file_exists($path2)) {
-            $size = filesize($path2);
-            echo "📁 $f: {$size} bytes\n";
+        $fp = DATA_DIR . '/' . $f;
+        if (file_exists($fp)) {
+            $size = filesize($fp);
+            $lines = count(file($fp));
+            echo "✅ {$f}: {$size} bytes, {$lines} 行\n";
         } else {
-            echo "❌ $f: 不存在\n";
+            echo "❌ {$f}: 不存在\n";
         }
     }
-    echo "</pre>";
-    echo '<p><a href="/">返回首页</a> | <a href="/admin.php">管理后台</a></p>';
+    echo "=== 完成 " . date('Y-m-d H:i:s') . " ===\n";
     exit;
 }
 
