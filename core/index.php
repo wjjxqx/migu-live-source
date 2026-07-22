@@ -1,0 +1,215 @@
+<?php
+/**
+ * 咪咕视频爬取程序 - 主入口
+ * PHP 8.0+ 版本
+ */
+
+// 错误报告
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../utils/utils.php';
+require_once __DIR__ . '/../utils/appUtils.php';
+require_once __DIR__ . '/../cron/updateData.php';
+
+// 确保数据目录存在
+if (!is_dir(DATA_DIR)) {
+    mkdir(DATA_DIR, 0755, true);
+}
+
+// 获取请求信息
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+$requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$headers = getallheaders();
+
+// 解析URL - 修复Nginx下的PATH_INFO问题
+$path = '';
+
+// 方法1: 尝试从PATH_INFO获取
+if (isset($_SERVER['PATH_INFO']) && !empty($_SERVER['PATH_INFO'])) {
+    $path = $_SERVER['PATH_INFO'];
+}
+// 方法2: 从REQUEST_URI中提取
+else {
+    // 移除query string
+    $uri = explode('?', $requestUri)[0];
+    
+    // 移除script name
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+    if (!empty($scriptName) && strpos($uri, $scriptName) === 0) {
+        $path = substr($uri, strlen($scriptName));
+    }
+    
+    // 如果path为空或只有/，尝试从uri中提取index.php后面的部分
+    if (empty($path) || $path === '/') {
+        if (preg_match('#/index\.php(/.*)?$#', $uri, $matches)) {
+            $path = $matches[1] ?? '/';
+        } else {
+            $path = '/';
+        }
+    }
+}
+
+// 确保path以/开头
+if (empty($path)) {
+    $path = '/';
+}
+if ($path[0] !== '/') {
+    $path = '/' . $path;
+}
+
+// 身份认证
+$pass = getConf('pass', '');
+if (!empty($pass)) {
+    $pathParts = explode('/', trim($path, '/'));
+    if ($pathParts[0] != $pass) {
+        http_response_code(200);
+        header('Content-Type: application/json;charset=UTF-8');
+        echo '身份认证失败';
+        exit;
+    } else {
+        printGreen('身份认证成功');
+        // 移除密码部分
+        if (count($pathParts) > 1) {
+            $path = '/' . implode('/', array_slice($pathParts, 1));
+        } else {
+            $path = '/';
+        }
+    }
+}
+
+// 提取URL中的用户信息
+$urlToken = '';
+$urlUserId = '';
+
+if (preg_match('/^\/([^\/\s]+)\/([^\/\s]+)/', $path, $matches)) {
+    $urlUserId = $matches[1];
+    $urlToken = $matches[2];
+    $pathParts = explode('/', trim($path, '/'));
+    if (count($pathParts) >= 3) {
+        $path = '/' . $pathParts[2];
+    } else {
+        $path = '/';
+    }
+} else {
+    $urlUserId = getConf('userId', '');
+    $urlToken = getConf('token', '');
+}
+
+printMagenta('请求地址：' . $path);
+
+// HEAD请求
+if ($requestMethod === 'HEAD') {
+    http_response_code(200);
+    header('Content-Type: application/json;charset=UTF-8');
+    exit;
+}
+
+// 只允许GET请求
+if ($requestMethod !== 'GET') {
+    http_response_code(200);
+    header('Content-Type: application/json;charset=UTF-8');
+    echo json_encode(['data' => '请使用GET请求']);
+    printRed('使用非GET请求:' . $requestMethod);
+    exit;
+}
+
+// 接口列表
+$interfaceList = ['/', '/interface.txt', '/m3u', '/txt', '/playback.xml'];
+
+// 调试
+if (isset($_GET['debug'])) {
+    echo "<pre>";
+    echo "Path: " . $path . "\n";
+    echo "In interfaceList: " . (in_array($path, $interfaceList) ? 'YES' : 'NO') . "\n";
+    echo "</pre>";
+    exit;
+}
+
+// 处理接口请求
+if (in_array($path, $interfaceList)) {
+    // 检查数据文件是否存在
+    $dataFile = '';
+    switch ($path) {
+        case '/':
+        case '/m3u':
+        case '/interface.txt':
+            $dataFile = INTERFACE_TXT;
+            break;
+        case '/txt':
+            $dataFile = INTERFACE_TXT_FORMAT;
+            break;
+        case '/playback.xml':
+            $dataFile = PLAYBACK_XML;
+            break;
+    }
+    
+    // 如果数据文件不存在，提示用户更新
+    if (!empty($dataFile) && !file_exists($dataFile)) {
+        http_response_code(200);
+        header('Content-Type: text/html;charset=UTF-8');
+        echo '<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>数据未初始化</title></head>
+<body style="font-family: sans-serif; padding: 40px; background: #f5f5f5;">
+<div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+<h1 style="color: #333;">⚠️ 数据未初始化</h1>
+<p style="color: #666; line-height: 1.6;">首次使用需要先更新数据。请访问管理后台手动更新。</p>
+<div style="margin: 20px 0; padding: 15px; background: #E3F2FD; border-radius: 6px;">
+<strong>操作步骤：</strong>
+<ol style="margin: 10px 0;">
+<li>访问管理后台</li>
+<li>点击“手动更新数据”按钮</li>
+<li>等待更新完成</li>
+<li>重新访问此接口</li>
+</ol>
+</div>
+<p>
+<a href="admin.php" style="display: inline-block; padding: 10px 20px; background: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin: 5px;">→ 进入管理后台</a>
+<a href="test_api.php" style="display: inline-block; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 5px;">→ 测试接口</a>
+</p>
+<p style="margin-top: 20px; color: #999; font-size: 13px;">请求路径: ' . htmlspecialchars($path) . '</p>
+</div>
+</body>
+</html>';
+        exit;
+    }
+    
+    $interfaceObj = interfaceStr($path, $headers, $urlUserId, $urlToken);
+    
+    if ($interfaceObj['content'] == null) {
+        $interfaceObj['content'] = '获取失败';
+    }
+    
+    header('Content-Type: ' . $interfaceObj['contentType']);
+    if ($path == '/m3u') {
+        header('Content-Disposition: inline; filename="interface.m3u"');
+    }
+    http_response_code(200);
+    echo $interfaceObj['content'];
+    exit;
+}
+
+// 频道请求
+$result = channel($path, $urlUserId, $urlToken);
+
+// 结果异常
+if ($result['code'] != 302) {
+    printRed($result['desc']);
+    http_response_code($result['code'] == 200 ? 400 : $result['code']);
+    header('Content-Type: application/json;charset=UTF-8');
+    echo json_encode([
+        'error' => $result['desc'],
+        'path' => $path,
+        'code' => $result['code']
+    ]);
+    exit;
+}
+
+// 302重定向
+http_response_code(302);
+header('Content-Type: application/json;charset=UTF-8');
+header('Location: ' . $result['playURL']);
+exit;

@@ -1,0 +1,14 @@
+{
+    "userId": "",
+    "token": "",
+    "port": 8080,
+    "host": "https:\/\/45080.xinsite.top",
+    "rateType": 3,
+    "pass": "",
+    "enableHDR": true,
+    "enableH265": true,
+    "updateInterval": 6,
+    "ignoreCategory": "",
+    "mergeTVCategory": false,
+    "customMergeCategory": ""
+}

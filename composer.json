@@ -1,0 +1,15 @@
+{
+    "name": "migu-live-source",
+    "description": "咪咕视频直播源获取系统",
+    "type": "project",
+    "require": {
+        "php": ">=8.0",
+        "ext-curl": "*",
+        "ext-openssl": "*",
+        "ext-mbstring": "*",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "classmap": ["utils/", "backend/", "core/"]
+    }
+}

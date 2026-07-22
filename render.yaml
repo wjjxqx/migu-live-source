@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: migu-live-source
+    runtime: php
+    buildCommand: "composer install --no-dev --optimize-autoloader"
+    startCommand: "php -S 0.0.0.0:$PORT index.php"
+    envVars:
+      - key: PHP_VERSION
+        value: "8.1"
+      - key: APP_ENV
+        value: production
+    healthCheckPath: /
+    autoDeploy: true

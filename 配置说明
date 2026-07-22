@@ -1,0 +1,7 @@
+
+PHP 8.0+
+nginx部署添加
+伪静态
+location / {
+        try_files $uri $uri/ /index.php$uri?$query_string;
+    }

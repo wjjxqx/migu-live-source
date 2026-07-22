@@ -1,0 +1,8 @@
+vendor/
+composer.lock
+data/*.txt
+data/*.xml
+migucache/
+*.log
+.DS_Store
+Thumbs.db

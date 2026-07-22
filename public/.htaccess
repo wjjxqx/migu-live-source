@@ -1,0 +1,40 @@
+RewriteEngine On
+RewriteBase /
+
+# 如果请求的是已存在的文件或目录，直接访问
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# 将所有请求转发到core/index.php，并传递路径参数
+RewriteRule ^(.*)$ core/index.php/$1 [QSA,L]
+
+# 禁止访问data目录
+RewriteRule ^data/ - [F,L]
+
+# 禁止访问utils、backend、cron目录
+RewriteRule ^(utils|backend|cron)/ - [F,L]
+
+# 禁止访问.git目录
+RewriteRule ^\.git/ - [F,L]
+
+# 设置默认字符集
+AddDefaultCharset UTF-8
+
+# 启用GZIP压缩
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# 设置缓存控制
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/html "access plus 0 seconds"
+    ExpiresByType application/json "access plus 0 seconds"
+</IfModule>
+
+# 安全头部
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
