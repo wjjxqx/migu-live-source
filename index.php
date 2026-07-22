@@ -117,12 +117,33 @@ $interfaceList = ['/', '/interface.txt', '/m3u', '/txt', '/playback.xml'];
 // Cron触发端点 (用于外部定时任务)
 if ($path === '/cron' || $path === '/update') {
     header('Content-Type: text/html;charset=UTF-8');
-    echo '<h3>⏰ 数据更新中...</h3>';
+    header('X-Accel-Buffering: no');
+    echo '<pre>';
+    echo "⏰ 数据更新开始 - " . date('Y-m-d H:i:s') . "\n";
+    echo "PHP版本: " . phpversion() . "\n";
+    echo "Extensions: " . implode(', ', get_loaded_extensions()) . "\n";
+    echo "ignoreCategory: " . getConf('ignoreCategory', '') . "\n";
+    echo "---\n";
     ob_flush(); flush();
+    
     require_once __DIR__ . '/cron/updateData.php';
-    echo '<h3 style="color:green">✅ 更新完成！</h3>';
-    echo '<p>时间: ' . date('Y-m-d H:i:s') . '</p>';
-    echo '<p><a href="/">返回首页</a></p>';
+    
+    echo "---\n";
+    echo "✅ 更新完成 - " . date('Y-m-d H:i:s') . "\n";
+    
+    // 检查生成的文件
+    $files = ['interface.txt', 'interfaceTXT.txt', 'playback.xml'];
+    foreach ($files as $f) {
+        $path2 = DATA_DIR . '/' . $f;
+        if (file_exists($path2)) {
+            $size = filesize($path2);
+            echo "📁 $f: {$size} bytes\n";
+        } else {
+            echo "❌ $f: 不存在\n";
+        }
+    }
+    echo "</pre>";
+    echo '<p><a href="/">返回首页</a> | <a href="/admin.php">管理后台</a></p>';
     exit;
 }
 
