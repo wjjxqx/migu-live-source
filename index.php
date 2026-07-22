@@ -105,6 +105,37 @@ if ($path === '/health') {
     exit;
 }
 
+// API测试端点
+if ($path === '/test-api') {
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "=== API测试 ===\n";
+    
+    echo "1. 测试咪咕体育API...\n";
+    $start = microtime(true);
+    $peData = fetchUrl('http://v0-sc.miguvideo.com/vms-match/v6/staticcache/basic/match-list/normal-match-list/0/all/default/1/miguvideo', [], 10000);
+    $elapsed = round(microtime(true) - $start, 2);
+    
+    if ($peData) {
+        echo "   ✅ 成功 ({$elapsed}s), 数据量: " . strlen(json_encode($peData)) . " bytes\n";
+    } else {
+        echo "   ❌ 失败 ({$elapsed}s)\n";
+    }
+    
+    echo "2. 测试咪咕TV分类API...\n";
+    $start = microtime(true);
+    $tvData = fetchUrl('https://program-sc.miguvideo.com/live/v2/tv-data/1ff892f2b5ab4a79be6e25b69d2f5d05', [], 10000);
+    $elapsed = round(microtime(true) - $start, 2);
+    
+    if ($tvData) {
+        echo "   ✅ 成功 ({$elapsed}s), 数据量: " . strlen(json_encode($tvData)) . " bytes\n";
+    } else {
+        echo "   ❌ 失败 ({$elapsed}s)\n";
+    }
+    
+    echo "=== 完成 ===\n";
+    exit;
+}
+
 // Cron触发端点 (用于外部定时任务)
 if ($path === '/cron' || $path === '/update') {
     header('Content-Type: text/plain; charset=utf-8');
